@@ -53,6 +53,7 @@ const roomFormSchema = z.object({
   roomType: z.enum(["sound", "music", "vfx", "client_office", "editing", "dubbing", "mixing"]),
   capacity: z.string().optional(),
   isActive: z.boolean().default(true),
+  ignoreConflict: z.boolean().default(false),
 });
 
 type RoomFormValues = z.infer<typeof roomFormSchema>;
@@ -75,6 +76,7 @@ export default function RoomsPage() {
       roomType: "sound",
       capacity: "1",
       isActive: true,
+      ignoreConflict: false,
     },
   });
 
@@ -146,6 +148,7 @@ export default function RoomsPage() {
         roomType: room.roomType as any,
         capacity: room.capacity?.toString() || "1",
         isActive: room.isActive,
+        ignoreConflict: room.ignoreConflict || false,
       });
     } else {
       setEditingRoom(null);
@@ -154,6 +157,7 @@ export default function RoomsPage() {
         roomType: "sound",
         capacity: "1",
         isActive: true,
+        ignoreConflict: false,
       });
     }
     setDialogOpen(true);
@@ -345,22 +349,41 @@ export default function RoomsPage() {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="isActive"
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-2">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        data-testid="checkbox-active"
-                      />
-                    </FormControl>
-                    <FormLabel className="!mt-0">Active</FormLabel>
-                  </FormItem>
-                )}
-              />
+              <div className="flex flex-wrap gap-4">
+                <FormField
+                  control={form.control}
+                  name="isActive"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center gap-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-active"
+                        />
+                      </FormControl>
+                      <FormLabel className="!mt-0">Active</FormLabel>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="ignoreConflict"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center gap-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-ignore-conflict"
+                        />
+                      </FormControl>
+                      <FormLabel className="!mt-0">Ignore Conflict</FormLabel>
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <DialogFooter className="gap-2">
                 <Button

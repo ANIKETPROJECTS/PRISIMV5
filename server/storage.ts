@@ -99,6 +99,8 @@ export interface IStorage {
   updateBooking(id: number, booking: Partial<InsertBooking>, userId?: number): Promise<Booking | undefined>;
   cancelBooking(id: number, reason: string, userId?: number): Promise<Booking | undefined>;
   getBookingLogs(bookingId: number): Promise<BookingLog[]>;
+  checkBookingConflicts(booking: { roomId: number; editorId?: number; bookingDate: string; fromTime: string; toTime: string; excludeBookingId?: number }): Promise<{ hasConflict: boolean; conflicts: any[]; editorOnLeave: boolean; leaveInfo?: any }>;
+  calculateBillingHours(fromTime: string, toTime: string, actualFromTime?: string, actualToTime?: string, breakHours?: number): number;
 
   // Editor Leaves
   getEditorLeaves(editorId?: number): Promise<(EditorLeave & { editor?: Editor })[]>;
@@ -402,7 +404,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createBooking(booking: InsertBooking, userId?: number): Promise<Booking> {
-    const [created] = await db.insert(bookings).values(booking).returning();
+    // Calculate billing hours before creating
+    const totalHours = this.calculateBillingHours(
+      booking.fromTime,
+      booking.toTime,
+      booking.actualFromTime || undefined,
+      booking.actualToTime || undefined,
+      booking.breakHours || 0
+    );
+    
+    const [created] = await db.insert(bookings).values({
+      ...booking,
+      totalHours,
+    }).returning();
     
     await db.insert(bookingLogs).values({
       bookingId: created.id,
@@ -415,9 +429,43 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateBooking(id: number, booking: Partial<InsertBooking>, userId?: number): Promise<Booking | undefined> {
+    // First, fetch existing booking to check status and get current values
+    const existingRows = await db.select().from(bookings).where(eq(bookings.id, id)).limit(1);
+    
+    // Handle missing booking early
+    if (existingRows.length === 0) {
+      return undefined;
+    }
+    
+    const existing = existingRows[0];
+    
+    // Check if booking is cancelled
+    if (existing.status === "cancelled") {
+      throw new Error("Cannot update a cancelled booking");
+    }
+    
+    // Calculate billing hours if any time-related fields are being updated
+    let totalHours: number | undefined;
+    if (booking.fromTime || booking.toTime || booking.actualFromTime !== undefined || booking.actualToTime !== undefined || booking.breakHours !== undefined) {
+      // Always use persisted times as base, only override with new values
+      const fromTime = booking.fromTime || existing.fromTime;
+      const toTime = booking.toTime || existing.toTime;
+      const actualFromTime = booking.actualFromTime !== undefined ? booking.actualFromTime : existing.actualFromTime;
+      const actualToTime = booking.actualToTime !== undefined ? booking.actualToTime : existing.actualToTime;
+      const breakHours = booking.breakHours !== undefined ? booking.breakHours : (existing.breakHours || 0);
+      
+      totalHours = this.calculateBillingHours(
+        fromTime,
+        toTime,
+        actualFromTime || undefined,
+        actualToTime || undefined,
+        breakHours
+      );
+    }
+    
     const [updated] = await db
       .update(bookings)
-      .set({ ...booking, updatedAt: new Date() })
+      .set({ ...booking, ...(totalHours !== undefined ? { totalHours } : {}), updatedAt: new Date() })
       .where(eq(bookings.id, id))
       .returning();
     
@@ -463,6 +511,94 @@ export class DatabaseStorage implements IStorage {
       .from(bookingLogs)
       .where(eq(bookingLogs.bookingId, bookingId))
       .orderBy(desc(bookingLogs.createdAt));
+  }
+
+  async checkBookingConflicts(booking: { roomId: number; editorId?: number; bookingDate: string; fromTime: string; toTime: string; excludeBookingId?: number }): Promise<{ hasConflict: boolean; conflicts: any[]; editorOnLeave: boolean; leaveInfo?: any }> {
+    const conflicts: any[] = [];
+    let editorOnLeave = false;
+    let leaveInfo = undefined;
+
+    // Get the room to check if it ignores conflicts
+    const room = await this.getRoom(booking.roomId);
+    const roomIgnoresConflict = room?.ignoreConflict ?? false;
+
+    // Get editor if provided
+    let editorIgnoresConflict = false;
+    if (booking.editorId) {
+      const editor = await this.getEditor(booking.editorId);
+      editorIgnoresConflict = editor?.ignoreConflict ?? false;
+
+      // Check if editor is on leave
+      const leaves = await db.select().from(editorLeaves).where(eq(editorLeaves.editorId, booking.editorId));
+      for (const leave of leaves) {
+        if (booking.bookingDate >= leave.fromDate && booking.bookingDate <= leave.toDate) {
+          editorOnLeave = true;
+          leaveInfo = leave;
+          break;
+        }
+      }
+    }
+
+    // Get all bookings for the same date
+    const existingBookings = await this.getBookings({ from: booking.bookingDate, to: booking.bookingDate });
+    const activeBookings = existingBookings.filter(b => 
+      b.status !== "cancelled" && 
+      (booking.excludeBookingId ? b.id !== booking.excludeBookingId : true)
+    );
+
+    // Check for conflicts
+    for (const existing of activeBookings) {
+      // Check time overlap
+      const overlaps = booking.fromTime < existing.toTime && existing.fromTime < booking.toTime;
+      if (!overlaps) continue;
+
+      // Check room conflict
+      const hasRoomConflict = existing.roomId === booking.roomId;
+      if (hasRoomConflict && !roomIgnoresConflict && !existing.room?.ignoreConflict) {
+        conflicts.push({ type: 'room', booking: existing, message: `Room "${existing.room?.name}" is already booked` });
+      }
+
+      // Check editor conflict
+      if (booking.editorId && existing.editorId === booking.editorId) {
+        if (!editorIgnoresConflict && !existing.editor?.ignoreConflict) {
+          conflicts.push({ type: 'editor', booking: existing, message: `Editor "${existing.editor?.name}" is already assigned` });
+        }
+      }
+    }
+
+    return {
+      hasConflict: conflicts.length > 0,
+      conflicts,
+      editorOnLeave,
+      leaveInfo,
+    };
+  }
+
+  calculateBillingHours(fromTime: string, toTime: string, actualFromTime?: string, actualToTime?: string, breakHours?: number): number {
+    // Parse times
+    const parseTime = (time: string): number => {
+      const [hours, minutes] = time.split(':').map(Number);
+      return hours * 60 + minutes;
+    };
+
+    // Use actual times if available, otherwise use scheduled times
+    const startTime = actualFromTime || fromTime;
+    const endTime = actualToTime || toTime;
+
+    const startMinutes = parseTime(startTime);
+    const endMinutes = parseTime(endTime);
+
+    // Calculate total minutes
+    let totalMinutes = endMinutes - startMinutes;
+    if (totalMinutes < 0) totalMinutes += 24 * 60; // Handle overnight bookings
+
+    // Subtract break hours (convert to minutes)
+    const breakMinutes = (breakHours || 0) * 60;
+    totalMinutes -= breakMinutes;
+
+    // Convert to hours (rounded to nearest 0.5)
+    const hours = Math.max(0, Math.round(totalMinutes / 30) * 0.5);
+    return hours;
   }
 
   // Editor Leaves

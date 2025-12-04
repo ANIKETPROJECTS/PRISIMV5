@@ -354,6 +354,37 @@ export async function registerRoutes(server: Server, app: Express): Promise<void
     }
   });
 
+  const conflictCheckSchema = z.object({
+    roomId: z.union([z.string(), z.number()]).transform(val => typeof val === 'string' ? parseInt(val) : val),
+    editorId: z.union([z.string(), z.number()]).transform(val => typeof val === 'string' ? parseInt(val) : val).optional(),
+    bookingDate: z.string().min(1, "Date is required"),
+    fromTime: z.string().min(1, "From time is required"),
+    toTime: z.string().min(1, "To time is required"),
+    excludeBookingId: z.union([z.string(), z.number()]).transform(val => typeof val === 'string' ? parseInt(val) : val).optional(),
+  });
+
+  app.post("/api/bookings/check-conflicts", async (req, res) => {
+    try {
+      const validated = conflictCheckSchema.parse(req.body);
+
+      const result = await storage.checkBookingConflicts({
+        roomId: validated.roomId,
+        editorId: validated.editorId || undefined,
+        bookingDate: validated.bookingDate,
+        fromTime: validated.fromTime,
+        toTime: validated.toTime,
+        excludeBookingId: validated.excludeBookingId,
+      });
+
+      res.json(result);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid request", errors: error.errors });
+      }
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.post("/api/bookings", async (req, res) => {
     try {
       const { repeatDays, ...bookingData } = req.body;

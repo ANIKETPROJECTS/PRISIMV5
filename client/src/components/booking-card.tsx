@@ -53,14 +53,20 @@ export function BookingCard({
         <div
           className={cn(
             "relative rounded-md border-l-4 p-2 text-left hover-elevate cursor-pointer",
-            statusColors[booking.status as keyof typeof statusColors]
+            statusColors[booking.status as keyof typeof statusColors],
+            !isEditable && "cursor-not-allowed"
           )}
           onClick={() => isEditable && onEdit?.(booking)}
           data-testid={`booking-card-${booking.id}`}
         >
+          {!isEditable && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+              <div className="w-full h-0.5 bg-destructive/70 transform -rotate-12" />
+            </div>
+          )}
           <div className="flex items-start justify-between gap-1">
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
+              <p className={cn("text-sm font-medium truncate", !isEditable && "line-through text-muted-foreground")}>
                 {booking.customer?.name || "Unknown Customer"}
               </p>
               {!compact && (

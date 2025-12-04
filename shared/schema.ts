@@ -74,6 +74,7 @@ export const rooms = pgTable("rooms", {
   name: text("name").notNull(),
   roomType: roomTypeEnum("room_type").notNull(),
   capacity: integer("capacity").default(1),
+  ignoreConflict: boolean("ignore_conflict").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

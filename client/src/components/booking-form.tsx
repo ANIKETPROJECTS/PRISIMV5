@@ -1,8 +1,10 @@
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { AlertTriangle, AlertCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +31,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Booking, Customer, Project, Room, Editor, CustomerContact } from "@shared/schema";
@@ -43,6 +45,8 @@ const bookingFormSchema = z.object({
   bookingDate: z.string().min(1, "Date is required"),
   fromTime: z.string().min(1, "Start time is required"),
   toTime: z.string().min(1, "End time is required"),
+  actualFromTime: z.string().optional(),
+  actualToTime: z.string().optional(),
   breakHours: z.string().default("0"),
   status: z.enum(["planning", "tentative", "confirmed"]),
   notes: z.string().optional(),
@@ -58,8 +62,17 @@ interface BookingFormProps {
   defaultDate?: Date;
 }
 
+interface ConflictResult {
+  hasConflict: boolean;
+  conflicts: Array<{ type: string; booking: any; message: string }>;
+  editorOnLeave: boolean;
+  leaveInfo?: any;
+}
+
 export function BookingForm({ open, onOpenChange, booking, defaultDate }: BookingFormProps) {
   const { toast } = useToast();
+  const [conflictResult, setConflictResult] = useState<ConflictResult | null>(null);
+  const [isCheckingConflicts, setIsCheckingConflicts] = useState(false);
 
   const { data: rooms = [] } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
@@ -87,6 +100,8 @@ export function BookingForm({ open, onOpenChange, booking, defaultDate }: Bookin
       bookingDate: booking?.bookingDate || (defaultDate ? format(defaultDate, "yyyy-MM-dd") : ""),
       fromTime: booking?.fromTime || "09:00",
       toTime: booking?.toTime || "18:00",
+      actualFromTime: booking?.actualFromTime || "",
+      actualToTime: booking?.actualToTime || "",
       breakHours: booking?.breakHours?.toString() || "0",
       status: (booking?.status as any) || "planning",
       notes: booking?.notes || "",
@@ -105,6 +120,54 @@ export function BookingForm({ open, onOpenChange, booking, defaultDate }: Bookin
     enabled: !!selectedCustomerId,
   });
 
+  // Watch for conflict-related fields
+  const watchedRoomId = form.watch("roomId");
+  const watchedEditorId = form.watch("editorId");
+  const watchedBookingDate = form.watch("bookingDate");
+  const watchedFromTime = form.watch("fromTime");
+  const watchedToTime = form.watch("toTime");
+
+  // Check for conflicts when relevant fields change
+  const checkConflicts = useCallback(async () => {
+    if (!watchedRoomId || !watchedBookingDate || !watchedFromTime || !watchedToTime) {
+      setConflictResult(null);
+      return;
+    }
+
+    setIsCheckingConflicts(true);
+    try {
+      const response = await apiRequest("POST", "/api/bookings/check-conflicts", {
+        roomId: watchedRoomId,
+        editorId: watchedEditorId || undefined,
+        bookingDate: watchedBookingDate,
+        fromTime: watchedFromTime,
+        toTime: watchedToTime,
+        excludeBookingId: booking?.id,
+      });
+      setConflictResult(response as ConflictResult);
+    } catch (error) {
+      console.error("Error checking conflicts:", error);
+    } finally {
+      setIsCheckingConflicts(false);
+    }
+  }, [watchedRoomId, watchedEditorId, watchedBookingDate, watchedFromTime, watchedToTime, booking?.id]);
+
+  useEffect(() => {
+    if (open && watchedRoomId && watchedBookingDate && watchedFromTime && watchedToTime) {
+      const timer = setTimeout(() => {
+        checkConflicts();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [open, checkConflicts, watchedRoomId, watchedBookingDate, watchedFromTime, watchedToTime]);
+
+  // Reset conflict result when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setConflictResult(null);
+    }
+  }, [open]);
+
   const createMutation = useMutation({
     mutationFn: async (data: BookingFormValues) => {
       return apiRequest("POST", "/api/bookings", {
@@ -116,6 +179,8 @@ export function BookingForm({ open, onOpenChange, booking, defaultDate }: Bookin
         bookingDate: data.bookingDate,
         fromTime: data.fromTime,
         toTime: data.toTime,
+        actualFromTime: data.actualFromTime || null,
+        actualToTime: data.actualToTime || null,
         breakHours: parseInt(data.breakHours) || 0,
         status: data.status,
         notes: data.notes,
@@ -150,6 +215,8 @@ export function BookingForm({ open, onOpenChange, booking, defaultDate }: Bookin
         bookingDate: data.bookingDate,
         fromTime: data.fromTime,
         toTime: data.toTime,
+        actualFromTime: data.actualFromTime || null,
+        actualToTime: data.actualToTime || null,
         breakHours: parseInt(data.breakHours) || 0,
         status: data.status,
         notes: data.notes,
@@ -190,6 +257,32 @@ export function BookingForm({ open, onOpenChange, booking, defaultDate }: Bookin
             {booking ? "Update the booking details below." : "Fill in the details to create a new booking."}
           </DialogDescription>
         </DialogHeader>
+
+        {conflictResult?.editorOnLeave && (
+          <Alert variant="destructive" data-testid="alert-editor-leave">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Editor on Leave</AlertTitle>
+            <AlertDescription>
+              The selected editor is on leave during this date. Please choose a different editor or date.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {conflictResult?.hasConflict && (
+          <Alert variant="destructive" data-testid="alert-conflicts">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Booking Conflicts ({conflictResult.conflicts.length})</AlertTitle>
+            <AlertDescription>
+              <ul className="list-disc list-inside mt-1 space-y-1">
+                {conflictResult.conflicts.map((conflict, index) => (
+                  <li key={index} className="text-sm">
+                    {conflict.message} ({conflict.booking?.fromTime} - {conflict.booking?.toTime})
+                  </li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -374,13 +467,41 @@ export function BookingForm({ open, onOpenChange, booking, defaultDate }: Bookin
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="actualFromTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Actual From</FormLabel>
+                    <FormControl>
+                      <Input type="time" data-testid="input-actual-from-time" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="actualToTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Actual To</FormLabel>
+                    <FormControl>
+                      <Input type="time" data-testid="input-actual-to-time" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="breakHours"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Break Hours</FormLabel>
+                    <FormLabel>Break Hrs</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
@@ -393,7 +514,9 @@ export function BookingForm({ open, onOpenChange, booking, defaultDate }: Bookin
                   </FormItem>
                 )}
               />
+            </div>
 
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="status"
