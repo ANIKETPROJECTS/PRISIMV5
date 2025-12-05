@@ -132,14 +132,14 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-4">
+      <SidebarHeader className="p-4 bg-sidebar-header text-sidebar-header-foreground">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Film className="h-5 w-5 text-primary" />
+          <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+            <Film className="h-5 w-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="font-semibold text-sm truncate">PRISM</h2>
-            <p className="text-xs text-muted-foreground truncate">
+            <h2 className="font-semibold text-sm truncate text-white">PRISM</h2>
+            <p className="text-xs text-white/70 truncate">
               {company?.name || "No company"}
             </p>
           </div>

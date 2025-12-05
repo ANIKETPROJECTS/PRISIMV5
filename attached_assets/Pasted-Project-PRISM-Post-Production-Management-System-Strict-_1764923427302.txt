@@ -1,0 +1,177 @@
+Project: PRISM – Post-Production Management System
+Strict Rules:
+
+❌ Do NOT break any existing booking, calendar, or report logic
+
+❌ Do NOT change booking form date behavior (it is already working correctly)
+
+❌ Do NOT change dashboard layout or structure
+
+✅ Only apply the UI + behavior updates listed below
+
+✅ Use existing database and authentication
+
+✅ 1. CALENDAR HEADER RIGHT SIDE – LIVE CURRENT DATE (LOCKED)
+❌ Current Issue:
+
+The header date on the right side can be changed manually
+
+You want this to always show LIVE current system date only
+
+✅ Required Fix:
+
+✅ On the right side of the calendar header:
+
+Always display:
+
+LIVE SYSTEM DATE (Auto-updated daily)
+
+
+Example:
+
+December 5th, 2025
+
+
+✅ This date must:
+
+✅ Update automatically at midnight
+
+✅ Be fully locked (no date picker, no manual change)
+
+✅ Reflect only the real current date
+
+✅ IMPORTANT:
+
+❌ Do NOT change the Booking Form Date Field
+
+✅ Booking form date must continue to work exactly as it is now (date-wise reflect)
+
+✅ 2. LEFT SIDE HEADER – REMOVE DATE, SHOW LIVE TIME ONLY (12-HOUR FORMAT)
+❌ Current Display:
+Friday, 5 December 2025
+
+✅ Replace this with a LIVE DIGITAL CLOCK ONLY:
+
+✅ Format:
+
+Day + Time (12-hour format with seconds & AM/PM)
+
+
+✅ Example:
+
+Friday 10:24:45 AM
+
+
+✅ Behavior:
+
+✅ Updates every second (real-time)
+
+✅ Syncs with system time
+
+✅ No manual control
+
+✅ No date shown here (ONLY time + day)
+
+✅ 3. SIDEBAR COLOR THEME – LIGHT BLUE (PRISM HEADER UNCHANGED)
+
+✅ Apply:
+
+✅ Light / Slightly Light Blue Color to:
+
+Sidebar background
+
+Sidebar hover state
+
+Sidebar active menu item
+
+✅ Keep:
+
+✅ PRISM heading area in original dark blue
+
+✅ No logo change
+
+✅ No menu structure change
+
+✅ Goal:
+
+More attractive, modern, soft look
+
+Clean contrast between:
+
+PRISM header (dark)
+
+Sidebar + pages (light blue)
+
+✅ 4. ADMIN / PROFILE ICON – OPEN IN FULL VIEW MODE WITH DATA
+❌ Current Issue:
+
+Clicking Admin icon does not properly show all profile data in clean view mode
+
+✅ Required Behavior:
+
+✅ When user clicks:
+
+Admin / AD Icon
+
+
+✅ Open a Profile View Mode (Read-Only First) showing:
+
+Username
+
+Full Name
+
+Role
+
+Company
+
+Mobile Number
+
+Email
+
+User Status
+
+Last Login
+
+✅ Add buttons:
+
+✅ Edit Profile
+
+✅ Close
+
+✅ On clicking Edit Profile:
+
+Switch to edit mode
+
+Allow editing:
+
+Name
+
+Email
+
+Mobile
+
+Password (with confirmation)
+
+✅ Save properly to DB
+
+✅ Show success toast:
+
+Profile updated successfully
+
+
+✅ Permissions:
+
+✅ Admin → Can edit everything
+
+✅ Normal User → Can edit only personal fields
+
+✅ FINAL ACCEPTANCE CHECKLIST
+
+After implementation, all must work like this:
+
+✅ Right header date = always live current date (locked)
+✅ Left header shows only: Day + Live Time (12-hour with seconds)
+✅ Sidebar is light blue & PRISM header remains dark blue
+✅ Clicking Admin icon opens full profile in view mode
+✅ Edit + Save profile works correctly
+✅ Booking form date behavior remains untouched

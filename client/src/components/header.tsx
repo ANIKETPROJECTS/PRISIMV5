@@ -2,13 +2,6 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, Building2, Clock } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -32,25 +25,44 @@ export function Header({
   showDatePicker = true, 
   showCompanySelector = true 
 }: HeaderProps) {
-  const { selectedDate, setSelectedDate, company, setCompany } = useAuth();
-  const [liveDate, setLiveDate] = useState(new Date());
+  const { company, setCompany } = useAuth();
+  const [liveDateTime, setLiveDateTime] = useState(new Date());
 
   const { data: companies = [] } = useQuery<Company[]>({
     queryKey: ["/api/companies"],
   });
 
-  // Update live date every minute to keep it current
   useEffect(() => {
     const interval = setInterval(() => {
-      setLiveDate(new Date());
-    }, 60000);
+      setLiveDateTime(new Date());
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const formatTime12Hour = (date: Date) => {
+    return format(date, "h:mm:ss a");
+  };
+
+  const formatDayOnly = (date: Date) => {
+    return format(date, "EEEE");
+  };
+
+  const formatDateLocked = (date: Date) => {
+    return format(date, "MMMM do, yyyy");
+  };
 
   return (
     <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b bg-background px-4">
       <SidebarTrigger data-testid="button-sidebar-toggle" />
       
+      {/* Left side: Live Time (Day + Time in 12-hour format with seconds) */}
+      <div className="flex items-center gap-1.5 text-sm" data-testid="header-live-time">
+        <Clock className="h-4 w-4 text-muted-foreground" />
+        <span className="font-mono font-medium">
+          {formatDayOnly(liveDateTime)} {formatTime12Hour(liveDateTime)}
+        </span>
+      </div>
+
       {title && (
         <div className="flex-1">
           <h1 className="text-lg font-semibold">{title}</h1>
@@ -58,12 +70,6 @@ export function Header({
       )}
 
       <div className="flex items-center gap-2 ml-auto">
-        {/* Always show live current date */}
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground" data-testid="header-live-date">
-          <Clock className="h-4 w-4" />
-          <span>{format(liveDate, "EEEE, d MMMM yyyy")}</span>
-        </div>
-
         {showCompanySelector && companies.length > 0 && (
           <Select 
             value={company?.id?.toString() || ""} 
@@ -86,27 +92,15 @@ export function Header({
           </Select>
         )}
 
+        {/* Right side: Locked Live Date (no picker, auto-updates at midnight) */}
         {showDatePicker && (
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-[200px] justify-start text-left font-normal"
-                data-testid="button-date-picker"
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {format(selectedDate, "PPP")}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+          <div 
+            className="flex items-center gap-2 px-3 py-2 border rounded-md bg-muted/30 text-sm"
+            data-testid="header-locked-date"
+          >
+            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">{formatDateLocked(liveDateTime)}</span>
+          </div>
         )}
 
         <ThemeToggle />
