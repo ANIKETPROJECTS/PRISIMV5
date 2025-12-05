@@ -106,12 +106,24 @@ export default function LoginPage() {
       
       <div className="flex-1 flex items-center justify-center p-6 relative z-10">
         <Card className="w-full max-w-md bg-background/95 backdrop-blur-sm">
-          <CardHeader className="text-center space-y-4">
-            <div className="mx-auto w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center">
-              <Film className="w-8 h-8 text-primary" />
+          <CardHeader className="space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              {/* Left side: Day + Time */}
+              <div className="text-xs text-muted-foreground">
+                {new Date().toLocaleDateString("en-IN", { weekday: "long" })}, {new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+              </div>
+              
+              {/* Right side: Date */}
+              <div className="text-xs text-muted-foreground">
+                {new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-2xl font-semibold">PRISM</CardTitle>
+            
+            <div className="text-center">
+              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center">
+                <Film className="w-8 h-8 text-primary" />
+              </div>
+              <CardTitle className="text-2xl font-semibold mt-4">PRISM</CardTitle>
               <CardDescription className="text-sm text-muted-foreground mt-1">
                 Post-Production Management System
               </CardDescription>
@@ -226,16 +238,6 @@ export default function LoginPage() {
               </form>
             </Form>
 
-            <div className="mt-6 text-center">
-              <p className="text-xs text-muted-foreground">
-                Today: {new Date().toLocaleDateString("en-IN", { 
-                  weekday: "long",
-                  year: "numeric", 
-                  month: "long", 
-                  day: "numeric" 
-                })}
-              </p>
-            </div>
           </CardContent>
         </Card>
       </div>
