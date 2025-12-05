@@ -71,39 +71,39 @@ const utilityItems = [
 function SidebarNavGroup({
   label,
   items,
-  defaultOpen = true,
+  isOpen,
+  onToggle,
 }: {
   label: string;
   items: { title: string; url: string; icon: any }[];
-  defaultOpen?: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
 }) {
   const [location] = useLocation();
-  const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
     <Collapsible 
-      defaultOpen={defaultOpen} 
       open={isOpen}
-      onOpenChange={setIsOpen}
+      onOpenChange={onToggle}
       className="group/collapsible"
     >
-      <SidebarGroup className="py-1">
+      <SidebarGroup className="py-0.5 px-0">
         <SidebarGroupLabel 
           asChild 
-          className="h-auto py-1.5 px-2.5 mb-1 sidebar-group-label rounded-md mx-2 cursor-pointer"
+          className="h-auto py-2.5 px-3 sidebar-group-label rounded-none cursor-pointer"
         >
           <CollapsibleTrigger className="flex w-full items-center gap-2">
-            <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{label}</span>
+            <span className="text-sm font-semibold tracking-wide">{label}</span>
             <ChevronDown 
               className={cn(
-                "ml-auto h-3.5 w-3.5 text-gray-500 dark:text-gray-400 sidebar-arrow",
+                "ml-auto h-4 w-4 text-white/80 sidebar-arrow",
                 isOpen && "sidebar-arrow-open"
               )} 
             />
           </CollapsibleTrigger>
         </SidebarGroupLabel>
         <CollapsibleContent className="sidebar-collapsible-content">
-          <SidebarGroupContent>
+          <SidebarGroupContent className="px-2 pt-1">
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
@@ -130,6 +130,11 @@ function SidebarNavGroup({
 export function AppSidebar() {
   const { user, company, logout } = useAuth();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [openSection, setOpenSection] = useState<string>("Operations");
+
+  const handleToggleSection = (section: string) => {
+    setOpenSection(openSection === section ? "" : section);
+  };
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -162,11 +167,31 @@ export function AppSidebar() {
 
       <SidebarSeparator />
 
-      <SidebarContent>
-        <SidebarNavGroup label="Operations" items={operationsItems} defaultOpen={true} />
-        <SidebarNavGroup label="Masters" items={mastersItems} defaultOpen={false} />
-        <SidebarNavGroup label="Reports" items={reportsItems} defaultOpen={false} />
-        <SidebarNavGroup label="Utility" items={utilityItems} defaultOpen={false} />
+      <SidebarContent className="pt-4">
+        <SidebarNavGroup 
+          label="Operations" 
+          items={operationsItems} 
+          isOpen={openSection === "Operations"}
+          onToggle={() => handleToggleSection("Operations")}
+        />
+        <SidebarNavGroup 
+          label="Masters" 
+          items={mastersItems} 
+          isOpen={openSection === "Masters"}
+          onToggle={() => handleToggleSection("Masters")}
+        />
+        <SidebarNavGroup 
+          label="Reports" 
+          items={reportsItems} 
+          isOpen={openSection === "Reports"}
+          onToggle={() => handleToggleSection("Reports")}
+        />
+        <SidebarNavGroup 
+          label="Utility" 
+          items={utilityItems} 
+          isOpen={openSection === "Utility"}
+          onToggle={() => handleToggleSection("Utility")}
+        />
       </SidebarContent>
 
       <SidebarSeparator />

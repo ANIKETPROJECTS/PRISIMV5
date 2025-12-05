@@ -338,17 +338,19 @@ export default function BookingPage() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto" style={{ position: 'relative' }}>
-          <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden min-h-full">
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="grid grid-cols-7 gap-px bg-border rounded-t-lg sticky top-0 z-30 shadow-sm">
             {WEEKDAYS.map((day) => (
               <div
                 key={day}
-                className="bg-muted p-2 text-center text-sm font-medium sticky top-0 z-20"
-                style={{ position: 'sticky', top: 0 }}
+                className="bg-muted p-2 text-center text-sm font-medium"
               >
                 {day}
               </div>
             ))}
+          </div>
+          <div className="flex-1 overflow-auto">
+            <div className="grid grid-cols-7 gap-px bg-border rounded-b-lg min-h-full">
 
             {calendarDays.map((day) => {
               const dayBookings = getBookingsForDay(day);
@@ -417,6 +419,7 @@ export default function BookingPage() {
                 </div>
               );
             })}
+            </div>
           </div>
         </div>
       </div>

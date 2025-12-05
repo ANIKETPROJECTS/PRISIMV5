@@ -34,12 +34,12 @@ async function seedDemoData() {
 
   // Check if demo data already exists
   const existingCustomers = await db.select().from(customers);
-  if (existingCustomers.length > 0) {
-    console.log("Demo data already exists, skipping...");
+  if (existingCustomers.length >= 15) {
+    console.log("Demo data already exists with 15+ customers, skipping...");
     return;
   }
 
-  // Create Demo Customers (10)
+  // Create Demo Customers (15)
   const customerData = [
     { name: "Dharma Productions", companyName: "Dharma Productions Pvt Ltd", address: "Bandra, Mumbai", phone: "9876543210", email: "contact@dharma.com", gstNumber: "27AABCD1234F1Z5" },
     { name: "Yash Raj Films", companyName: "Yash Raj Films", address: "Andheri, Mumbai", phone: "9876543211", email: "info@yrf.com", gstNumber: "27AABCY1234G1Z6" },
@@ -51,6 +51,11 @@ async function seedDemoData() {
     { name: "Zee Studios", companyName: "Zee Entertainment", address: "Worli, Mumbai", phone: "9876543217", email: "studios@zee.com", gstNumber: "27AABCZ1234M1Z2" },
     { name: "Viacom18 Studios", companyName: "Viacom18 Media Pvt Ltd", address: "Film City, Mumbai", phone: "9876543218", email: "studios@viacom18.com", gstNumber: "27AABCV1234N1Z3" },
     { name: "Eros International", companyName: "Eros International Plc", address: "Lower Parel, Mumbai", phone: "9876543219", email: "info@erosintl.com", gstNumber: "27AABCE1234O1Z4" },
+    { name: "Netflix India", companyName: "Netflix Entertainment Services India LLP", address: "BKC, Mumbai", phone: "9876543220", email: "production@netflix.in", gstNumber: "27AABCN1234P1Z5" },
+    { name: "Amazon Prime Video", companyName: "Amazon Seller Services Pvt Ltd", address: "Hyderabad", phone: "9876543221", email: "studios@amazon.in", gstNumber: "36AABCA1234Q1Z6" },
+    { name: "Disney+ Hotstar", companyName: "Star India Pvt Ltd", address: "Andheri, Mumbai", phone: "9876543222", email: "content@hotstar.com", gstNumber: "27AABCD1234R1Z7" },
+    { name: "Sony Pictures India", companyName: "Sony Pictures Films India", address: "Malad, Mumbai", phone: "9876543223", email: "films@sonypictures.in", gstNumber: "27AABCS1234S1Z8" },
+    { name: "Tips Industries", companyName: "Tips Industries Ltd", address: "Andheri, Mumbai", phone: "9876543224", email: "production@tips.in", gstNumber: "27AABCT1234T1Z9" },
   ];
 
   const createdCustomers: any[] = [];
@@ -96,7 +101,7 @@ async function seedDemoData() {
   }
   console.log(`Created ${createdProjects.length} projects`);
 
-  // Create Demo Rooms (10)
+  // Create Demo Rooms (15)
   const roomData = [
     { name: "Sound Stage A", roomType: "sound" as const, capacity: 4 },
     { name: "Sound Stage B", roomType: "sound" as const, capacity: 3 },
@@ -108,6 +113,11 @@ async function seedDemoData() {
     { name: "Client Lounge", roomType: "client_office" as const, capacity: 10 },
     { name: "Dubbing Studio 1", roomType: "dubbing" as const, capacity: 3 },
     { name: "Mixing Room A", roomType: "mixing" as const, capacity: 4 },
+    { name: "Music Studio 2", roomType: "music" as const, capacity: 3 },
+    { name: "VFX Bay Gamma", roomType: "vfx" as const, capacity: 6 },
+    { name: "Editing Suite 3", roomType: "editing" as const, capacity: 2 },
+    { name: "Dubbing Studio 2", roomType: "dubbing" as const, capacity: 4 },
+    { name: "Mixing Room B", roomType: "mixing" as const, capacity: 3 },
   ];
 
   const createdRooms: any[] = [];
@@ -117,7 +127,7 @@ async function seedDemoData() {
   }
   console.log(`Created ${createdRooms.length} rooms`);
 
-  // Create Demo Editors (10)
+  // Create Demo Editors (15)
   const editorData = [
     { name: "Rajesh Kumar", editorType: "video" as const, phone: "9876540001", email: "rajesh@prism.com", joinDate: "2020-01-15" },
     { name: "Amit Sharma", editorType: "audio" as const, phone: "9876540002", email: "amit@prism.com", joinDate: "2019-06-20" },
@@ -129,6 +139,11 @@ async function seedDemoData() {
     { name: "Arjun Nair", editorType: "vfx" as const, phone: "9876540008", email: "arjun@prism.com", joinDate: "2019-04-12" },
     { name: "Kavita Reddy", editorType: "video" as const, phone: "9876540009", email: "kavita@prism.com", joinDate: "2023-01-05" },
     { name: "Sanjay Mishra", editorType: "audio" as const, phone: "9876540010", email: "sanjay@prism.com", joinDate: "2017-09-30" },
+    { name: "Deepak Joshi", editorType: "colorist" as const, phone: "9876540011", email: "deepak@prism.com", joinDate: "2021-09-15" },
+    { name: "Meera Desai", editorType: "di" as const, phone: "9876540012", email: "meera@prism.com", joinDate: "2020-05-22" },
+    { name: "Kiran Rao", editorType: "vfx" as const, phone: "9876540013", email: "kiran@prism.com", joinDate: "2022-08-10" },
+    { name: "Suresh Pillai", editorType: "audio" as const, phone: "9876540014", email: "suresh@prism.com", joinDate: "2019-12-01" },
+    { name: "Ananya Iyer", editorType: "video" as const, phone: "9876540015", email: "ananya@prism.com", joinDate: "2023-03-18" },
   ];
 
   const createdEditors: any[] = [];
@@ -181,7 +196,7 @@ async function seedDemoData() {
   }
   console.log(`Created ${bookingData.length} bookings for December 2025`);
 
-  // Create Demo Editor Leaves (for conflict testing) - 10 entries
+  // Create Demo Editor Leaves (for conflict testing) - 15 entries
   const leaveData = [
     { editorId: createdEditors[0].id, fromDate: "2025-12-25", toDate: "2025-12-25", reason: "Christmas Holiday" },
     { editorId: createdEditors[1].id, fromDate: "2025-12-26", toDate: "2025-12-27", reason: "Personal Leave" },
@@ -193,6 +208,11 @@ async function seedDemoData() {
     { editorId: createdEditors[7].id, fromDate: "2025-12-16", toDate: "2025-12-16", reason: "Personal Work" },
     { editorId: createdEditors[8].id, fromDate: "2025-12-30", toDate: "2025-12-30", reason: "Wedding Leave" },
     { editorId: createdEditors[9].id, fromDate: "2025-12-22", toDate: "2025-12-22", reason: "Emergency Leave" },
+    { editorId: createdEditors[10].id, fromDate: "2025-12-18", toDate: "2025-12-19", reason: "Training Workshop" },
+    { editorId: createdEditors[11].id, fromDate: "2025-12-07", toDate: "2025-12-07", reason: "Doctor Appointment" },
+    { editorId: createdEditors[12].id, fromDate: "2025-12-13", toDate: "2025-12-14", reason: "Out of Station" },
+    { editorId: createdEditors[13].id, fromDate: "2025-12-21", toDate: "2025-12-21", reason: "Bank Work" },
+    { editorId: createdEditors[14].id, fromDate: "2025-12-06", toDate: "2025-12-06", reason: "Half Day Leave" },
   ];
 
   for (const leave of leaveData) {
@@ -200,88 +220,23 @@ async function seedDemoData() {
   }
   console.log(`Created ${leaveData.length} leave entries`);
 
-  // Create Demo Chalans (for chalan reports)
+  // Create Demo Chalans (for chalan reports) - 15 entries
   const chalanData = [
-    { 
-      chalanNumber: "CH-2025-001",
-      customerId: createdCustomers[0].id,
-      projectId: createdProjects[0].id,
-      chalanDate: "2025-12-01",
-      totalAmount: 150000,
-      notes: "Post production work completed"
-    },
-    { 
-      chalanNumber: "CH-2025-002",
-      customerId: createdCustomers[1].id,
-      projectId: createdProjects[1].id,
-      chalanDate: "2025-12-03",
-      totalAmount: 250000,
-      notes: "VFX work Phase 1"
-    },
-    { 
-      chalanNumber: "CH-2025-003",
-      customerId: createdCustomers[2].id,
-      projectId: createdProjects[2].id,
-      chalanDate: "2025-12-05",
-      totalAmount: 180000,
-      notes: "Sound mixing and editing"
-    },
-    { 
-      chalanNumber: "CH-2025-004",
-      customerId: createdCustomers[4].id,
-      projectId: createdProjects[4].id,
-      chalanDate: "2025-12-10",
-      totalAmount: 320000,
-      notes: "Complete post production"
-    },
-    { 
-      chalanNumber: "CH-2025-005",
-      customerId: createdCustomers[5].id,
-      projectId: createdProjects[5].id,
-      chalanDate: "2025-12-12",
-      totalAmount: 420000,
-      notes: "VFX and DI work"
-    },
-    { 
-      chalanNumber: "CH-2025-006",
-      customerId: createdCustomers[6].id,
-      projectId: createdProjects[6].id,
-      chalanDate: "2025-12-14",
-      totalAmount: 550000,
-      notes: "Complete audio post production"
-    },
-    { 
-      chalanNumber: "CH-2025-007",
-      customerId: createdCustomers[7].id,
-      projectId: createdProjects[7].id,
-      chalanDate: "2025-12-16",
-      totalAmount: 380000,
-      notes: "DI and color grading"
-    },
-    { 
-      chalanNumber: "CH-2025-008",
-      customerId: createdCustomers[8].id,
-      projectId: createdProjects[8].id,
-      chalanDate: "2025-12-18",
-      totalAmount: 290000,
-      notes: "Sound design and mixing"
-    },
-    { 
-      chalanNumber: "CH-2025-009",
-      customerId: createdCustomers[9].id,
-      projectId: createdProjects[9].id,
-      chalanDate: "2025-12-20",
-      totalAmount: 175000,
-      notes: "Teaser editing and VFX"
-    },
-    { 
-      chalanNumber: "CH-2025-010",
-      customerId: createdCustomers[3].id,
-      projectId: createdProjects[3].id,
-      chalanDate: "2025-12-22",
-      totalAmount: 620000,
-      notes: "Full post production package"
-    },
+    { chalanNumber: "CH-2025-001", customerId: createdCustomers[0].id, projectId: createdProjects[0].id, chalanDate: "2025-12-01", totalAmount: 150000, notes: "Post production work completed" },
+    { chalanNumber: "CH-2025-002", customerId: createdCustomers[1].id, projectId: createdProjects[1].id, chalanDate: "2025-12-03", totalAmount: 250000, notes: "VFX work Phase 1" },
+    { chalanNumber: "CH-2025-003", customerId: createdCustomers[2].id, projectId: createdProjects[2].id, chalanDate: "2025-12-05", totalAmount: 180000, notes: "Sound mixing and editing" },
+    { chalanNumber: "CH-2025-004", customerId: createdCustomers[4].id, projectId: createdProjects[4].id, chalanDate: "2025-12-10", totalAmount: 320000, notes: "Complete post production" },
+    { chalanNumber: "CH-2025-005", customerId: createdCustomers[5].id, projectId: createdProjects[5].id, chalanDate: "2025-12-12", totalAmount: 420000, notes: "VFX and DI work" },
+    { chalanNumber: "CH-2025-006", customerId: createdCustomers[6].id, projectId: createdProjects[6].id, chalanDate: "2025-12-14", totalAmount: 550000, notes: "Complete audio post production" },
+    { chalanNumber: "CH-2025-007", customerId: createdCustomers[7].id, projectId: createdProjects[7].id, chalanDate: "2025-12-16", totalAmount: 380000, notes: "DI and color grading" },
+    { chalanNumber: "CH-2025-008", customerId: createdCustomers[8].id, projectId: createdProjects[8].id, chalanDate: "2025-12-18", totalAmount: 290000, notes: "Sound design and mixing" },
+    { chalanNumber: "CH-2025-009", customerId: createdCustomers[9].id, projectId: createdProjects[9].id, chalanDate: "2025-12-20", totalAmount: 175000, notes: "Teaser editing and VFX" },
+    { chalanNumber: "CH-2025-010", customerId: createdCustomers[3].id, projectId: createdProjects[3].id, chalanDate: "2025-12-22", totalAmount: 620000, notes: "Full post production package" },
+    { chalanNumber: "CH-2025-011", customerId: createdCustomers[10].id, projectId: createdProjects[10].id, chalanDate: "2025-12-07", totalAmount: 480000, notes: "Web series post production" },
+    { chalanNumber: "CH-2025-012", customerId: createdCustomers[11].id, projectId: createdProjects[11].id, chalanDate: "2025-12-09", totalAmount: 350000, notes: "Commercial editing" },
+    { chalanNumber: "CH-2025-013", customerId: createdCustomers[12].id, projectId: createdProjects[12].id, chalanDate: "2025-12-11", totalAmount: 225000, notes: "Documentary color grading" },
+    { chalanNumber: "CH-2025-014", customerId: createdCustomers[13].id, projectId: createdProjects[13].id, chalanDate: "2025-12-15", totalAmount: 560000, notes: "Film final mix" },
+    { chalanNumber: "CH-2025-015", customerId: createdCustomers[14].id, projectId: createdProjects[14].id, chalanDate: "2025-12-17", totalAmount: 195000, notes: "Promo videos editing" },
   ];
 
   for (const chalan of chalanData) {
@@ -312,25 +267,29 @@ async function seedDemoData() {
   }
   console.log(`Created ${chalanData.length} chalans with items`);
 
-  // Create additional users
+  // Create additional users (ignore duplicates)
   const additionalUsers = [
     { username: "gst_user", password: "user123", securityPin: "1234", role: "gst" as const, companyId: prismCompany.id, fullName: "GST User", email: "gst@prism.com", mobile: "9876500001" },
     { username: "non_gst_user", password: "user123", securityPin: "1234", role: "non_gst" as const, companyId: prismCompany.id, fullName: "Non-GST User", email: "nongst@prism.com", mobile: "9876500002" },
   ];
 
   for (const user of additionalUsers) {
-    await db.insert(users).values(user);
+    try {
+      await db.insert(users).values(user);
+    } catch (e: any) {
+      if (e.code !== '23505') throw e; // Ignore duplicate key errors
+    }
   }
-  console.log("Created additional demo users");
+  console.log("Processed additional demo users");
 
   console.log("\n=== Demo Data Summary ===");
-  console.log("Customers: 10");
+  console.log("Customers: 15");
   console.log("Projects: 15");
-  console.log("Rooms: 10");
-  console.log("Editors: 10");
+  console.log("Rooms: 15");
+  console.log("Editors: 15");
   console.log("Bookings: 15 (December 2025)");
-  console.log("Leaves: 10");
-  console.log("Chalans: 10");
+  console.log("Leaves: 15");
+  console.log("Chalans: 15");
   console.log("========================\n");
 
   console.log("Demo data seeding complete!");
