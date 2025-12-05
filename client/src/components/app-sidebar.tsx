@@ -82,10 +82,10 @@ function SidebarNavGroup({
   return (
     <Collapsible defaultOpen={defaultOpen} className="group/collapsible">
       <SidebarGroup>
-        <SidebarGroupLabel asChild>
+        <SidebarGroupLabel asChild className="h-auto py-2 px-3 mb-1 bg-sky-100 dark:bg-sky-900/30 rounded-md mx-2">
           <CollapsibleTrigger className="flex w-full items-center gap-2">
-            <span>{label}</span>
-            <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+            <span className="text-base font-bold text-gray-900 dark:text-gray-100">{label}</span>
+            <ChevronDown className="ml-auto h-4 w-4 text-gray-700 dark:text-gray-300 transition-transform group-data-[state=open]/collapsible:rotate-180" />
           </CollapsibleTrigger>
         </SidebarGroupLabel>
         <CollapsibleContent>

@@ -55,30 +55,30 @@ export function Header({
     <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b header-light-blue px-4">
       <SidebarTrigger data-testid="button-sidebar-toggle" />
       
-      {/* Left side: Live Day + Time (no box) */}
-      <div className="flex items-center gap-1.5 text-sm" data-testid="header-live-time">
-        <Clock className="h-4 w-4 text-muted-foreground" />
-        <span className="font-medium">
-          {formatDayOnly(liveDateTime)} {formatTime12Hour(liveDateTime)}
-        </span>
-      </div>
-
-      {/* Date (no box) */}
-      {showDatePicker && (
-        <div 
-          className="flex items-center gap-1.5 text-sm"
-          data-testid="header-locked-date"
-        >
-          <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-          <span className="font-medium">{formatDateLocked(liveDateTime)}</span>
-        </div>
-      )}
-
-      {/* Spacer to push right content */}
+      {/* Spacer to push all content to right */}
       <div className="flex-1" />
 
-      {/* Right side: Company selector (with box), Theme toggle */}
-      <div className="flex items-center gap-3">
+      {/* Right side: Day+Time, Date, Company selector, Theme toggle */}
+      <div className="flex items-center gap-4">
+        {/* Live Day + Time (no box) */}
+        <div className="flex items-center gap-1.5 text-sm" data-testid="header-live-time">
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium">
+            {formatDayOnly(liveDateTime)} {formatTime12Hour(liveDateTime)}
+          </span>
+        </div>
+
+        {/* Date (no box) */}
+        {showDatePicker && (
+          <div 
+            className="flex items-center gap-1.5 text-sm"
+            data-testid="header-locked-date"
+          >
+            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">{formatDateLocked(liveDateTime)}</span>
+          </div>
+        )}
+
         {/* Company Selector - keeps the box styling */}
         {showCompanySelector && companies.length > 0 && (
           <Select 
