@@ -383,25 +383,25 @@
     }
   }
 
-  /* Sidebar group label styling - light blue matching primary button */
+  /* Sidebar group label styling - dark blue */
   .sidebar-group-label {
-    background: hsl(200 100% 50%);
+    background: hsl(210 80% 30%);
     color: white !important;
     transition: all 200ms ease;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   }
 
   .sidebar-group-label:hover {
-    background: hsl(200 100% 45%);
+    background: hsl(210 80% 25%);
   }
 
   .dark .sidebar-group-label {
-    background: hsl(200 100% 55%);
+    background: hsl(210 70% 25%);
     color: white !important;
   }
 
   .dark .sidebar-group-label:hover {
-    background: hsl(200 100% 50%);
+    background: hsl(210 70% 22%);
   }
 
   .sidebar-group-label span {
