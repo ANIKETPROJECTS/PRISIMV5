@@ -68,7 +68,7 @@ export interface IStorage {
   getCustomers(): Promise<(Customer & { contacts?: CustomerContact[] })[]>;
   getCustomer(id: number): Promise<(Customer & { contacts?: CustomerContact[] }) | undefined>;
   createCustomer(customer: InsertCustomer, contacts?: InsertCustomerContact[]): Promise<Customer>;
-  updateCustomer(id: number, customer: Partial<InsertCustomer>, contacts?: InsertCustomerContact[]): Promise<Customer | undefined>;
+  updateCustomer(id: number, customer: Partial<InsertCustomer>, contacts?: (InsertCustomerContact & { id?: number })[]): Promise<Customer | undefined>;
   deleteCustomer(id: number): Promise<boolean>;
   getCustomerContacts(customerId: number): Promise<CustomerContact[]>;
 
@@ -236,15 +236,34 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async updateCustomer(id: number, customer: Partial<InsertCustomer>, contacts?: InsertCustomerContact[]): Promise<Customer | undefined> {
+  async updateCustomer(id: number, customer: Partial<InsertCustomer>, contacts?: (InsertCustomerContact & { id?: number })[]): Promise<Customer | undefined> {
     const [updated] = await db.update(customers).set(customer).where(eq(customers.id, id)).returning();
     
     if (contacts !== undefined) {
-      await db.delete(customerContacts).where(eq(customerContacts.customerId, id));
-      if (contacts.length > 0) {
+      const existingContacts = await db.select().from(customerContacts).where(eq(customerContacts.customerId, id));
+      const existingContactIds = existingContacts.map(c => c.id);
+      
+      const contactsWithId = contacts.filter(c => c.id !== undefined) as (InsertCustomerContact & { id: number })[];
+      const contactsWithoutId = contacts.filter(c => c.id === undefined);
+      const incomingIds = contactsWithId.map(c => c.id);
+      
+      for (const contact of contactsWithId) {
+        const { id: contactId, ...contactData } = contact;
+        await db.update(customerContacts).set({ ...contactData, customerId: id }).where(eq(customerContacts.id, contactId));
+      }
+      
+      if (contactsWithoutId.length > 0) {
         await db.insert(customerContacts).values(
-          contacts.map(c => ({ ...c, customerId: id }))
+          contactsWithoutId.map(c => ({ ...c, customerId: id }))
         );
+      }
+      
+      const idsToRemove = existingContactIds.filter(existingId => !incomingIds.includes(existingId));
+      for (const contactId of idsToRemove) {
+        const [referencedBooking] = await db.select({ id: bookings.id }).from(bookings).where(eq(bookings.contactId, contactId)).limit(1);
+        if (!referencedBooking) {
+          await db.delete(customerContacts).where(eq(customerContacts.id, contactId));
+        }
       }
     }
     
@@ -252,6 +271,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteCustomer(id: number): Promise<boolean> {
+    const [referencedBooking] = await db.select({ id: bookings.id }).from(bookings).where(eq(bookings.customerId, id)).limit(1);
+    if (referencedBooking) {
+      throw new Error("Cannot delete customer: it is referenced by bookings");
+    }
+    const [referencedChalan] = await db.select({ id: chalans.id }).from(chalans).where(eq(chalans.customerId, id)).limit(1);
+    if (referencedChalan) {
+      throw new Error("Cannot delete customer: it is referenced by chalans");
+    }
+    const [referencedProject] = await db.select({ id: projects.id }).from(projects).where(eq(projects.customerId, id)).limit(1);
+    if (referencedProject) {
+      throw new Error("Cannot delete customer: it has associated projects");
+    }
     await db.delete(customerContacts).where(eq(customerContacts.customerId, id));
     await db.delete(customers).where(eq(customers.id, id));
     return true;
@@ -290,6 +321,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProject(id: number): Promise<boolean> {
+    const [referencedBooking] = await db.select({ id: bookings.id }).from(bookings).where(eq(bookings.projectId, id)).limit(1);
+    if (referencedBooking) {
+      throw new Error("Cannot delete project: it is referenced by bookings");
+    }
+    const [referencedChalan] = await db.select({ id: chalans.id }).from(chalans).where(eq(chalans.projectId, id)).limit(1);
+    if (referencedChalan) {
+      throw new Error("Cannot delete project: it is referenced by chalans");
+    }
     await db.delete(projects).where(eq(projects.id, id));
     return true;
   }
@@ -315,6 +354,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteRoom(id: number): Promise<boolean> {
+    const [referencedBooking] = await db.select({ id: bookings.id }).from(bookings).where(eq(bookings.roomId, id)).limit(1);
+    if (referencedBooking) {
+      throw new Error("Cannot delete room: it is referenced by bookings");
+    }
     await db.delete(rooms).where(eq(rooms.id, id));
     return true;
   }
@@ -340,6 +383,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteEditor(id: number): Promise<boolean> {
+    const [referencedBooking] = await db.select({ id: bookings.id }).from(bookings).where(eq(bookings.editorId, id)).limit(1);
+    if (referencedBooking) {
+      throw new Error("Cannot delete editor: it is referenced by bookings");
+    }
+    const [referencedLeave] = await db.select({ id: editorLeaves.id }).from(editorLeaves).where(eq(editorLeaves.editorId, id)).limit(1);
+    if (referencedLeave) {
+      throw new Error("Cannot delete editor: it has leave records");
+    }
     await db.delete(editors).where(eq(editors.id, id));
     return true;
   }
