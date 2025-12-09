@@ -55,8 +55,8 @@ async function seedDemoData() {
     return;
   }
 
-  const prismCompany = existingCompanies.find(c => c.name === "PRISM");
-  const airavataCompany = existingCompanies.find(c => c.name === "Airavata Studio");
+  const prismCompany = existingCompanies.find(c => c.name.toLowerCase().includes("prism"));
+  const airavataCompany = existingCompanies.find(c => c.name.toLowerCase().includes("airavata"));
 
   if (!prismCompany || !airavataCompany) {
     console.log("Required companies not found.");

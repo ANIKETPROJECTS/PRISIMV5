@@ -4,17 +4,8 @@ import { CalendarIcon, Building2, Clock } from "lucide-react";
 import { useLocation } from "wouter";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/lib/auth-context";
-import { useQuery } from "@tanstack/react-query";
-import type { Company } from "@shared/schema";
 
 const routeTitles: Record<string, string> = {
   "/": "Booking",
@@ -44,15 +35,11 @@ export function Header({
   showDatePicker = true, 
   showCompanySelector = true 
 }: HeaderProps) {
-  const { company, setCompany } = useAuth();
+  const { company } = useAuth();
   const [liveDateTime, setLiveDateTime] = useState(new Date());
   const [location] = useLocation();
 
   const pageTitle = title || routeTitles[location] || "PRISM";
-
-  const { data: companies = [] } = useQuery<Company[]>({
-    queryKey: ["/api/companies"],
-  });
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -106,27 +93,15 @@ export function Header({
           </div>
         )}
 
-        {/* Company Selector - keeps the box styling */}
-        {showCompanySelector && companies.length > 0 && (
-          <Select 
-            value={company?.id?.toString() || ""} 
-            onValueChange={(value) => {
-              const selected = companies.find(c => c.id.toString() === value);
-              setCompany(selected || null);
-            }}
+        {/* Company Display - shows only logged-in company (read-only) */}
+        {showCompanySelector && company && (
+          <div 
+            className="flex items-center gap-2 px-3 py-2 rounded-md bg-white/50 dark:bg-white/10 text-sm"
+            data-testid="header-company-display"
           >
-            <SelectTrigger className="w-[180px] smooth-hover bg-white/50 dark:bg-white/10" data-testid="header-company-select">
-              <Building2 className="h-4 w-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="Select company" />
-            </SelectTrigger>
-            <SelectContent>
-              {companies.map((c) => (
-                <SelectItem key={c.id} value={c.id.toString()}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">{company.name}</span>
+          </div>
         )}
 
         <ThemeToggle />
