@@ -1,0 +1,170 @@
+✅ Replit Professional Prompt – Apply Below Changes to My Existing Project (No Major Functionality Changes)
+1️⃣ Cancel Booking – Read-Only Mode
+
+When user clicks Cancel Booking, open the same booking detail screen used for Confirmed / Tentative / Planning bookings.
+
+But the cancel-booking view must be 100% read-only:
+
+No edit
+
+No update
+
+No dropdown changes
+
+Buttons disabled except “Close”
+
+UI must look the same, only disabled state applied.
+
+2️⃣ Booking Dashboard – Show Only 3 Latest Bookings + "More/Explore" Button
+
+When a date has 15+ bookings (e.g., 15 Dec 2025):
+
+Show only latest 3 bookings in dashboard.
+
+Below them show a “More Bookings / Explore” button.
+
+When clicked → open Day View Booking screen (similar to Google Calendar day view).
+
+3️⃣ Booking Dashboard – Add “Day View” Button + “Schedule Booking” Button
+
+On booking dashboard right side of Month Filter, add:
+
+Day View button → opens Google-Calendar style day booking view.
+
+Schedule Booking button → opens booking form.
+
+4️⃣ Implement Lazy Loading (Performance Improvement)
+
+Apply lazy loading across whole project wherever large data appears:
+
+Bookings list
+
+Customer master
+
+Projects master
+
+Rooms
+
+Editors
+
+Reports
+
+Chalan/Invoice
+
+Improve performance without affecting existing logic.
+
+5️⃣ Customer Master – Add “+ Add Designation”
+
+In Designation dropdown:
+
+Add a + icon inside dropdown.
+
+Clicking + opens small popup: “Add New Designation”
+
+If designation does not exist → allow adding.
+
+After saving → automatically appear in dropdown.
+
+Field must support:
+
+Dropdown selection
+
+Manual input if needed
+
+6️⃣ Allow Decimal Inputs
+
+In entire project:
+
+Price / Rate fields → allow decimal values.
+
+Quantity fields → allow decimal values.
+
+Validation should support 2–4 decimal places.
+
+7️⃣ Sorting – Remove Double Arrows
+
+In all date filters:
+
+By default → show ascending records with ↑ arrow.
+
+When clicked → change to descending with ↓ arrow.
+
+Never show both arrows at same time.
+
+Sorting must work on single click, not double click.
+
+8️⃣ Chalan/Invoice – Auto Reflect Booking Data + Role Access
+
+Chalan/Invoice must:
+
+Auto-reflect updated booking details (real-time sync).
+
+Update if booking details change.
+
+Apply role-based access:
+
+Only permissioned users can create / edit chalans.
+
+Others can only view.
+
+9️⃣ Proper Conflict Checking
+
+Implement correct conflict detection in:
+
+Project Master → overlapping project data
+
+Booking Module → booking conflicts (time/day/resource conflicts)
+
+Show clear conflict messages with proper UI.
+
+🔟 User Rights System – Fix & Enforce
+
+Make role-rights system work properly:
+
+If a role has limited access, user should see only those fields/pages.
+
+Restrict:
+
+Buttons
+
+Edit fields
+
+Modules
+
+Menus
+
+No override unless admin.
+
+1️⃣1️⃣ User Management – Fix Edit UI + Add Fields
+
+Improve user edit UI:
+
+Input icons alignment correction.
+
+Clean, modern UI.
+
+Fields to include:
+
+Username
+
+Password
+
+Mobile
+
+Account/Role
+
+Profile Image Avatar
+
+Email (if available)
+
+Proper edit mode functionality must work with validation.
+
+✅ Important
+
+Do not change major functionality
+
+Keep existing flow intact
+
+Only fix UI, usability, role rights, conflict logic & lazy loading
+
+Ensure everything works smoothly across all modules
