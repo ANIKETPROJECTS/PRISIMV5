@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import { AlertTriangle, Calendar, Download, Clock, Building, User, Check, X } from "lucide-react";
+import { AlertTriangle, Calendar, Download, Clock, Building, User, Check, X, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,8 +15,10 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Header } from "@/components/header";
 import { EmptyState } from "@/components/empty-state";
+import { BookingForm } from "@/components/booking-form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { BookingWithRelations, Room, Editor } from "@shared/schema";
@@ -27,6 +29,8 @@ export default function ConflictReportPage() {
   const [toDate, setToDate] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
   const [selectedRoom, setSelectedRoom] = useState<string>("all");
   const [selectedEditor, setSelectedEditor] = useState<string>("all");
+  const [bookingFormOpen, setBookingFormOpen] = useState(false);
+  const [editingBooking, setEditingBooking] = useState<BookingWithRelations | null>(null);
 
   const conflictQueryParams = new URLSearchParams({
     from: fromDate,
@@ -77,6 +81,11 @@ export default function ConflictReportPage() {
       confirmBookingId: confirmBooking.id,
       cancelBookingId: cancelBooking.id
     });
+  };
+
+  const handleUpdateBooking = (booking: BookingWithRelations) => {
+    setEditingBooking(booking);
+    setBookingFormOpen(true);
   };
 
   const handleExport = () => {
@@ -254,6 +263,15 @@ export default function ConflictReportPage() {
                               <Check className="h-3 w-3 mr-1" />
                               Keep This
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleUpdateBooking(conflict.booking1)}
+                              data-testid={`button-update-booking1-${index}`}
+                            >
+                              <Pencil className="h-3 w-3 mr-1" />
+                              Update
+                            </Button>
                           </div>
                         </div>
 
@@ -290,6 +308,15 @@ export default function ConflictReportPage() {
                               <Check className="h-3 w-3 mr-1" />
                               Keep This
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleUpdateBooking(conflict.booking2)}
+                              data-testid={`button-update-booking2-${index}`}
+                            >
+                              <Pencil className="h-3 w-3 mr-1" />
+                              Update
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -304,6 +331,16 @@ export default function ConflictReportPage() {
           </div>
         </div>
       </div>
+
+      <BookingForm
+        open={bookingFormOpen}
+        onOpenChange={(open) => {
+          setBookingFormOpen(open);
+          if (!open) setEditingBooking(null);
+        }}
+        booking={editingBooking}
+        defaultDate={editingBooking ? new Date(editingBooking.bookingDate) : undefined}
+      />
     </div>
   );
 }

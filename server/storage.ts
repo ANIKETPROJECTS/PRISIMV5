@@ -836,11 +836,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createChalan(chalan: InsertChalan, items: InsertChalanItem[]): Promise<Chalan> {
-    const chalanNumber = `CH-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    // Generate unique chalan ID in format CHL-000001
+    const lastChalan = await db.select({ id: chalans.id }).from(chalans).orderBy(desc(chalans.id)).limit(1);
+    const nextId = (lastChalan[0]?.id || 0) + 1;
+    const chalanNumber = `CHL-${String(nextId).padStart(6, '0')}`;
+    
+    // Ensure totalAmount is stored as string
+    const totalAmountStr = typeof chalan.totalAmount === 'number' 
+      ? chalan.totalAmount.toString() 
+      : (chalan.totalAmount || '0');
     
     const chalanInsert: typeof chalans.$inferInsert = {
       ...chalan,
       chalanNumber,
+      totalAmount: totalAmountStr,
     };
     
     const [created] = await db.insert(chalans).values(chalanInsert).returning();
@@ -849,6 +858,9 @@ export class DatabaseStorage implements IStorage {
       const itemsInsert: (typeof chalanItems.$inferInsert)[] = items.map(item => ({
         ...item,
         chalanId: created.id,
+        quantity: typeof item.quantity === 'number' ? item.quantity.toString() : (item.quantity || '1'),
+        rate: typeof item.rate === 'number' ? item.rate.toString() : (item.rate || '0'),
+        amount: typeof item.amount === 'number' ? item.amount.toString() : (item.amount || '0'),
       }));
       await db.insert(chalanItems).values(itemsInsert);
     }
@@ -870,7 +882,11 @@ export class DatabaseStorage implements IStorage {
     if (chalanData.projectId !== undefined) updateData.projectId = chalanData.projectId;
     if (chalanData.chalanDate !== undefined) updateData.chalanDate = chalanData.chalanDate;
     if (chalanData.notes !== undefined) updateData.notes = chalanData.notes;
-    if (chalanData.totalAmount !== undefined) updateData.totalAmount = chalanData.totalAmount;
+    if (chalanData.totalAmount !== undefined) {
+      updateData.totalAmount = typeof chalanData.totalAmount === 'number' 
+        ? chalanData.totalAmount.toString() 
+        : chalanData.totalAmount;
+    }
 
     const [updated] = await db
       .update(chalans)
@@ -886,6 +902,9 @@ export class DatabaseStorage implements IStorage {
       const itemsInsert: (typeof chalanItems.$inferInsert)[] = items.map(item => ({
         ...item,
         chalanId: id,
+        quantity: typeof item.quantity === 'number' ? item.quantity.toString() : (item.quantity || '1'),
+        rate: typeof item.rate === 'number' ? item.rate.toString() : (item.rate || '0'),
+        amount: typeof item.amount === 'number' ? item.amount.toString() : (item.amount || '0'),
       }));
       await db.insert(chalanItems).values(itemsInsert);
     }

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { format, parseISO, addDays, subDays } from "date-fns";
 import {
@@ -12,36 +12,126 @@ import {
   Film,
   Calendar,
   Plus,
+  MoreVertical,
+  FileText,
+  XCircle,
+  Eye,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Header } from "@/components/header";
 import { EmptyState } from "@/components/empty-state";
+import { BookingForm } from "@/components/booking-form";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
-import type { BookingWithRelations } from "@shared/schema";
+import type { BookingWithRelations, Chalan } from "@shared/schema";
 
 export default function CalendarDayView() {
   const [, navigate] = useLocation();
   const params = useParams<{ date?: string }>();
   const { setSelectedDate } = useAuth();
+  const { toast } = useToast();
 
   const initialDate = params.date ? parseISO(params.date) : new Date();
   const [currentDate, setCurrentDate] = useState(initialDate);
+  const [bookingFormOpen, setBookingFormOpen] = useState(false);
+  const [editingBooking, setEditingBooking] = useState<BookingWithRelations | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancellingBooking, setCancellingBooking] = useState<BookingWithRelations | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [logsDialogOpen, setLogsDialogOpen] = useState(false);
+  const [viewingBooking, setViewingBooking] = useState<BookingWithRelations | null>(null);
 
   const dateStr = format(currentDate, "yyyy-MM-dd");
 
   const { data: bookings = [], isLoading } = useQuery<BookingWithRelations[]>({
     queryKey: [`/api/bookings?from=${dateStr}&to=${dateStr}`],
+  });
+
+  const { data: bookingLogs = [] } = useQuery({
+    queryKey: [`/api/bookings/${viewingBooking?.id}/logs`],
+    enabled: !!viewingBooking && logsDialogOpen,
+  });
+
+  const bookingProjectIds = useMemo(() => {
+    return bookings.map(b => b.projectId).filter(Boolean);
+  }, [bookings]);
+
+  const { data: chalans = [] } = useQuery<Chalan[]>({
+    queryKey: ["/api/chalans", { projectIds: bookingProjectIds }],
+    queryFn: async () => {
+      if (bookingProjectIds.length === 0) return [];
+      const params = new URLSearchParams();
+      bookingProjectIds.forEach(id => params.append("projectId", id!.toString()));
+      const response = await fetch(`/api/chalans?${params.toString()}`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: bookingProjectIds.length > 0,
+  });
+
+  const bookingChalanMap = useMemo(() => {
+    const map = new Map<number, Chalan>();
+    chalans.forEach((chalan) => {
+      if (chalan.bookingId) {
+        map.set(chalan.bookingId, chalan);
+      }
+    });
+    return map;
+  }, [chalans]);
+
+  const hasChalan = (bookingId: number) => bookingChalanMap.has(bookingId);
+  const getChalan = (bookingId: number) => bookingChalanMap.get(bookingId);
+
+  const cancelMutation = useMutation({
+    mutationFn: async ({ id, reason }: { id: number; reason: string }) => {
+      return apiRequest("POST", `/api/bookings/${id}/cancel`, { reason });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ predicate: (query) => 
+        typeof query.queryKey[0] === 'string' && query.queryKey[0].startsWith('/api/bookings')
+      });
+      toast({ title: "Booking cancelled successfully" });
+      setCancelDialogOpen(false);
+      setCancellingBooking(null);
+      setCancelReason("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error cancelling booking",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const sortedBookings = useMemo(() => {
@@ -68,8 +158,35 @@ export default function CalendarDayView() {
   };
 
   const handleNewBooking = () => {
+    setEditingBooking(null);
     setSelectedDate(currentDate);
-    navigate("/");
+    setBookingFormOpen(true);
+  };
+
+  const handleEditBooking = (booking: BookingWithRelations) => {
+    setEditingBooking(booking);
+    setBookingFormOpen(true);
+  };
+
+  const handleViewLogs = (booking: BookingWithRelations) => {
+    setViewingBooking(booking);
+    setLogsDialogOpen(true);
+  };
+
+  const handleCancelBooking = (booking: BookingWithRelations) => {
+    setCancellingBooking(booking);
+    setCancelDialogOpen(true);
+  };
+
+  const handleCreateChalan = (booking: BookingWithRelations) => {
+    navigate(`/chalan?customerId=${booking.customerId}&projectId=${booking.projectId}`);
+  };
+
+  const handleViewChalan = (booking: BookingWithRelations) => {
+    const chalan = getChalan(booking.id);
+    if (chalan) {
+      navigate(`/chalan?view=${chalan.id}`);
+    }
   };
 
   const statusColors = {
@@ -173,6 +290,8 @@ export default function CalendarDayView() {
                 icon={Calendar}
                 title="No bookings for this day"
                 description={`There are no bookings scheduled for ${format(currentDate, "MMMM d, yyyy")}`}
+                actionLabel="Create Booking"
+                onAction={handleNewBooking}
               />
             ) : (
               <div className="space-y-6">
@@ -186,15 +305,17 @@ export default function CalendarDayView() {
                         <Card
                           key={booking.id}
                           className={cn(
-                            "border-l-4 hover-elevate cursor-pointer",
+                            "border-l-4",
                             statusColors[booking.status as keyof typeof statusColors]
                           )}
-                          onClick={() => navigate(`/?date=${dateStr}&bookingId=${booking.id}`)}
                           data-testid={`day-view-booking-${booking.id}`}
                         >
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1 min-w-0">
+                              <div 
+                                className="flex-1 min-w-0 cursor-pointer hover-elevate rounded-md p-1 -m-1"
+                                onClick={() => handleEditBooking(booking)}
+                              >
                                 <div className="flex items-center gap-2 mb-2">
                                   <Badge
                                     className={cn(
@@ -241,6 +362,40 @@ export default function CalendarDayView() {
                                   </p>
                                 )}
                               </div>
+
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" data-testid={`button-booking-menu-${booking.id}`}>
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleViewLogs(booking)}>
+                                    <History className="h-4 w-4 mr-2" />
+                                    View Logs
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  {hasChalan(booking.id) ? (
+                                    <DropdownMenuItem onClick={() => handleViewChalan(booking)}>
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      View Chalan
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem onClick={() => handleCreateChalan(booking)}>
+                                      <FileText className="h-4 w-4 mr-2" />
+                                      Create Chalan
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem 
+                                    className="text-destructive"
+                                    onClick={() => handleCancelBooking(booking)}
+                                  >
+                                    <XCircle className="h-4 w-4 mr-2" />
+                                    Cancel Booking
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                           </CardContent>
                         </Card>
@@ -284,6 +439,20 @@ export default function CalendarDayView() {
                                   </p>
                                 )}
                               </div>
+
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleViewLogs(booking)}>
+                                    <History className="h-4 w-4 mr-2" />
+                                    View Logs
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                           </CardContent>
                         </Card>
@@ -296,6 +465,111 @@ export default function CalendarDayView() {
           </ScrollArea>
         </div>
       </div>
+
+      <BookingForm
+        open={bookingFormOpen}
+        onOpenChange={(open) => {
+          setBookingFormOpen(open);
+          if (!open) setEditingBooking(null);
+        }}
+        booking={editingBooking}
+        defaultDate={currentDate}
+      />
+
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Booking</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. Please provide a reason for cancellation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-medium mb-1">Booking Details:</p>
+              <p className="text-sm text-muted-foreground">
+                {cancellingBooking?.customer?.name} - {cancellingBooking?.project?.name}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {cancellingBooking?.bookingDate} ({cancellingBooking?.fromTime} - {cancellingBooking?.toTime})
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="cancel-reason">Reason for Cancellation *</Label>
+              <Textarea
+                id="cancel-reason"
+                placeholder="Enter cancellation reason..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className="mt-1"
+                data-testid="input-cancel-reason"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCancelDialogOpen(false);
+                setCancelReason("");
+              }}
+            >
+              Keep Booking
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (cancellingBooking && cancelReason.trim()) {
+                  cancelMutation.mutate({
+                    id: cancellingBooking.id,
+                    reason: cancelReason,
+                  });
+                }
+              }}
+              disabled={!cancelReason.trim() || cancelMutation.isPending}
+            >
+              {cancelMutation.isPending ? "Cancelling..." : "Cancel Booking"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={logsDialogOpen} onOpenChange={setLogsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Booking Logs</DialogTitle>
+            <DialogDescription>
+              History of changes for this booking.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[400px]">
+            <div className="space-y-3">
+              {Array.isArray(bookingLogs) && bookingLogs.length > 0 ? (
+                bookingLogs.map((log: any) => (
+                  <div
+                    key={log.id}
+                    className="p-3 rounded-md bg-muted/50 text-sm"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium">{log.action}</span>
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {format(new Date(log.createdAt), "PPp")}
+                      </span>
+                    </div>
+                    {log.changes && (
+                      <p className="text-muted-foreground text-xs">{log.changes}</p>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No logs available for this booking.
+                </p>
+              )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

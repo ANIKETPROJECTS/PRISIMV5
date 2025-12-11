@@ -90,7 +90,7 @@ export default function BookingPage() {
   const [logsDialogOpen, setLogsDialogOpen] = useState(false);
   const [viewingBooking, setViewingBooking] = useState<BookingWithRelations | null>(null);
 
-  const MAX_BOOKINGS_PER_DAY = 3;
+  const MAX_BOOKINGS_PER_DAY = 2;
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
