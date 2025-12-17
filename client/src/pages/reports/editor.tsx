@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import { UserCog, Download, Clock, Film, Printer } from "lucide-react";
+import { UserCog, Download, Clock, Film } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,10 +72,6 @@ function EditorReportContent() {
     a.click();
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const totalHours = editorReports.reduce((sum, r) => sum + r.totalHours, 0);
   const totalBookings = editorReports.reduce((sum, r) => sum + r.bookings.length, 0);
 
@@ -128,28 +124,16 @@ function EditorReportContent() {
                   </Select>
                 </div>
                 <Separator />
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={handleExport}
-                    disabled={editorReports.length === 0}
-                    data-testid="button-export"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={handlePrint}
-                    disabled={editorReports.length === 0}
-                    data-testid="button-print"
-                  >
-                    <Printer className="h-4 w-4 mr-2" />
-                    Print
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleExport}
+                  disabled={editorReports.length === 0}
+                  data-testid="button-export"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
               </CardContent>
             </Card>
 

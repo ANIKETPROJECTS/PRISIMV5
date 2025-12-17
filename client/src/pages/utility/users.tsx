@@ -55,7 +55,6 @@ const createUserFormSchema = z.object({
   fullName: z.string().optional(),
   email: z.string().email("Invalid email format").optional().or(z.literal("")),
   mobile: z.string().optional(),
-  password: z.string().min(4, "Password must be at least 4 characters"),
   securityPin: z.string().min(4, "Security PIN must be at least 4 characters"),
   role: z.enum(["admin", "gst", "non_gst", "account", "custom"]),
   companyId: z.string().optional(),
@@ -67,9 +66,6 @@ const editUserFormSchema = z.object({
   fullName: z.string().optional(),
   email: z.string().email("Invalid email format").optional().or(z.literal("")),
   mobile: z.string().optional(),
-  password: z.string().optional().refine((val) => !val || val.length >= 4, {
-    message: "Password must be at least 4 characters if provided",
-  }),
   securityPin: z.string().optional().refine((val) => !val || val.length >= 4, {
     message: "Security PIN must be at least 4 characters if provided",
   }),
@@ -81,7 +77,7 @@ const editUserFormSchema = z.object({
 const addCompanyFormSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
   adminUsername: z.string().min(1, "Admin username is required"),
-  adminPassword: z.string().min(4, "Password must be at least 4 characters"),
+  adminSecurityPin: z.string().min(4, "Security PIN must be at least 4 characters"),
 });
 
 type UserFormValues = z.infer<typeof createUserFormSchema>;
@@ -106,13 +102,11 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<UserType | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingUser, setDeletingUser] = useState<UserType | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
   const [showPin, setShowPin] = useState(false);
   const [addCompanyDialogOpen, setAddCompanyDialogOpen] = useState(false);
-  const [showCompanyPassword, setShowCompanyPassword] = useState(false);
+  const [showCompanyPin, setShowCompanyPin] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [viewingUser, setViewingUser] = useState<(UserType & { company?: Company }) | null>(null);
-  const [viewShowPassword, setViewShowPassword] = useState(false);
   const [viewShowPin, setViewShowPin] = useState(false);
 
   const isAdmin = user?.role === "admin";
@@ -147,7 +141,6 @@ export default function UsersPage() {
       fullName: "",
       email: "",
       mobile: "",
-      password: "",
       securityPin: "",
       role: "non_gst",
       companyId: "",
@@ -160,7 +153,7 @@ export default function UsersPage() {
     defaultValues: {
       companyName: "",
       adminUsername: "",
-      adminPassword: "",
+      adminSecurityPin: "",
     },
   });
 
@@ -185,7 +178,7 @@ export default function UsersPage() {
 
   const handleCloseAddCompanyDialog = () => {
     setAddCompanyDialogOpen(false);
-    setShowCompanyPassword(false);
+    setShowCompanyPin(false);
     addCompanyForm.reset();
   };
 
@@ -197,6 +190,8 @@ export default function UsersPage() {
     mutationFn: async (data: UserFormValues) => {
       return apiRequest("POST", "/api/users", {
         ...data,
+        // Password is set to same as Security PIN (authentication is PIN-only)
+        password: data.securityPin,
         companyId: data.companyId ? parseInt(data.companyId) : null,
         email: data.email || null,
         fullName: data.fullName || null,
@@ -228,11 +223,10 @@ export default function UsersPage() {
         companyId: data.companyId ? parseInt(data.companyId) : null,
         isActive: data.isActive,
       };
-      if (data.password && data.password.length > 0) {
-        payload.password = data.password;
-      }
+      // Security PIN update (also updates password to keep them in sync)
       if (data.securityPin && data.securityPin.length > 0) {
         payload.securityPin = data.securityPin;
+        payload.password = data.securityPin;
       }
       return apiRequest("PATCH", `/api/users/${editingUser?.id}`, payload);
     },
@@ -295,7 +289,6 @@ export default function UsersPage() {
         fullName: user.fullName || "",
         email: user.email || "",
         mobile: user.mobile || "",
-        password: "",
         securityPin: "",
         role: user.role as any,
         companyId: user.companyId?.toString() || "",
@@ -308,7 +301,6 @@ export default function UsersPage() {
         fullName: "",
         email: "",
         mobile: "",
-        password: "",
         securityPin: "",
         role: "non_gst",
         companyId: "",
@@ -320,7 +312,6 @@ export default function UsersPage() {
 
   const handleOpenViewDialog = (userRow: UserType & { company?: Company }) => {
     setViewingUser(userRow);
-    setViewShowPassword(false);
     setViewShowPin(false);
     setViewDialogOpen(true);
   };
@@ -328,11 +319,10 @@ export default function UsersPage() {
   const handleCloseViewDialog = () => {
     setViewDialogOpen(false);
     setViewingUser(null);
-    setViewShowPassword(false);
     setViewShowPin(false);
   };
 
-  const { data: sensitiveData } = useQuery<{ password: string; securityPin: string }>({
+  const { data: sensitiveData } = useQuery<{ securityPin: string }>({
     queryKey: ["/api/users", viewingUser?.id, "sensitive"],
     queryFn: async () => {
       if (!viewingUser?.id) throw new Error("No user selected");
@@ -346,7 +336,6 @@ export default function UsersPage() {
   const handleCloseDialog = () => {
     setDialogOpen(false);
     setEditingUser(null);
-    setShowPassword(false);
     setShowPin(false);
     form.reset();
   };
@@ -631,81 +620,42 @@ export default function UsersPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Password {editingUser ? "(leave blank to keep)" : "*"}
-                      </FormLabel>
-                      <FormControl>
-                        <div className="relative flex items-center">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                          <Input
-                            type={showPassword ? "text" : "password"}
-                            className="pl-9 pr-10"
-                            placeholder="Enter password"
-                            data-testid="input-password"
-                            {...field}
-                          />
-                          <button
-                            type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            onClick={() => setShowPassword(!showPassword)}
-                            tabIndex={-1}
-                          >
-                            {showPassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="securityPin"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Security PIN {editingUser ? "(leave blank to keep)" : "*"}
-                      </FormLabel>
-                      <FormControl>
-                        <div className="relative flex items-center">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                          <Input
-                            type={showPin ? "text" : "password"}
-                            className="pl-9 pr-10"
-                            placeholder="Enter PIN"
-                            data-testid="input-pin"
-                            {...field}
-                          />
-                          <button
-                            type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            onClick={() => setShowPin(!showPin)}
-                            tabIndex={-1}
-                          >
-                            {showPin ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="securityPin"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Security PIN {editingUser ? "(leave blank to keep)" : "*"}
+                    </FormLabel>
+                    <FormControl>
+                      <div className="relative flex items-center">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        <Input
+                          type={showPin ? "text" : "password"}
+                          className="pl-9 pr-10"
+                          placeholder="Enter Security PIN"
+                          data-testid="input-pin"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          onClick={() => setShowPin(!showPin)}
+                          tabIndex={-1}
+                        >
+                          {showPin ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <div className="grid grid-cols-2 gap-4">
                 <FormField
@@ -902,18 +852,18 @@ export default function UsersPage() {
 
               <FormField
                 control={addCompanyForm.control}
-                name="adminPassword"
+                name="adminSecurityPin"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Admin Password *</FormLabel>
+                    <FormLabel>Admin Security PIN *</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                          type={showCompanyPassword ? "text" : "password"}
-                          placeholder="Enter admin password"
+                          type={showCompanyPin ? "text" : "password"}
+                          placeholder="Enter security PIN"
                           className="pl-10 pr-10"
-                          data-testid="input-admin-password"
+                          data-testid="input-admin-pin"
                           {...field}
                         />
                         <Button
@@ -921,10 +871,10 @@ export default function UsersPage() {
                           variant="ghost"
                           size="icon"
                           className="absolute right-0 top-0 h-full px-3"
-                          onClick={() => setShowCompanyPassword(!showCompanyPassword)}
-                          data-testid="button-toggle-company-password"
+                          onClick={() => setShowCompanyPin(!showCompanyPin)}
+                          data-testid="button-toggle-company-pin"
                         >
-                          {showCompanyPassword ? (
+                          {showCompanyPin ? (
                             <EyeOff className="h-4 w-4" />
                           ) : (
                             <Eye className="h-4 w-4" />
@@ -1026,48 +976,25 @@ export default function UsersPage() {
                 <div className="pt-4 border-t space-y-4">
                   <h4 className="font-medium text-sm text-muted-foreground">Credentials (Admin Only)</h4>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <span className="text-sm text-muted-foreground">Password</span>
-                      <div className="flex items-center gap-2">
-                        <Lock className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-mono" data-testid="text-user-password">
-                          {viewShowPassword ? sensitiveData.password : "********"}
-                        </span>
-                        <button
-                          type="button"
-                          className="text-muted-foreground hover:text-foreground"
-                          onClick={() => setViewShowPassword(!viewShowPassword)}
-                          data-testid="button-toggle-view-password"
-                        >
-                          {viewShowPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-sm text-muted-foreground">Security PIN</span>
-                      <div className="flex items-center gap-2">
-                        <Lock className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-mono" data-testid="text-user-pin">
-                          {viewShowPin ? sensitiveData.securityPin : "********"}
-                        </span>
-                        <button
-                          type="button"
-                          className="text-muted-foreground hover:text-foreground"
-                          onClick={() => setViewShowPin(!viewShowPin)}
-                          data-testid="button-toggle-view-pin"
-                        >
-                          {viewShowPin ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
+                  <div className="space-y-1">
+                    <span className="text-sm text-muted-foreground">Security PIN</span>
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-mono" data-testid="text-user-pin">
+                        {viewShowPin ? sensitiveData.securityPin : "********"}
+                      </span>
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-foreground"
+                        onClick={() => setViewShowPin(!viewShowPin)}
+                        data-testid="button-toggle-view-pin"
+                      >
+                        {viewShowPin ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
                     </div>
                   </div>
                 </div>

@@ -190,10 +190,11 @@ export class DatabaseStorage implements IStorage {
     return await db.transaction(async (tx) => {
       const [company] = await tx.insert(companies).values({ name: data.companyName }).returning();
       
+      // Password is set to same as security PIN (authentication is PIN-only)
       const [user] = await tx.insert(users).values({
         username: data.adminUsername,
-        password: data.adminPassword,
-        securityPin: data.adminPassword,
+        password: data.adminSecurityPin,
+        securityPin: data.adminSecurityPin,
         role: "admin",
         companyId: company.id,
         isActive: true,
