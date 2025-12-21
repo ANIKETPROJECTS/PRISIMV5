@@ -208,8 +208,8 @@ export default function ChalanRevisePage() {
                     setEditingItems(selectedChalan.items?.map(item => ({
                       id: item.id,
                       description: item.description,
-                      quantity: item.quantity.toString(),
-                      rate: item.rate.toString(),
+                      quantity: (item.quantity ?? "1").toString(),
+                      rate: (item.rate ?? "0").toString(),
                     })) || []);
                     setEditingNotes(selectedChalan.notes || "");
                     setReviseDialogOpen(true);
@@ -380,29 +380,81 @@ export default function ChalanRevisePage() {
               </DialogDescription>
             </DialogHeader>
 
-            <ScrollArea className="h-[400px] border rounded-md p-4">
+            <ScrollArea className="h-[500px] border rounded-md p-4">
               <div className="space-y-6 pr-4">
+                {/* Read-only Details Section */}
+                <div>
+                  <h3 className="font-semibold mb-3">Chalan Details</h3>
+                  <Card className="bg-muted/50">
+                    <CardContent className="pt-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Booking Date</p>
+                          <p className="font-mono text-sm font-medium">
+                            {selectedChalan ? format(new Date(selectedChalan.chalanDate), "PPP") : "-"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Customer</p>
+                          <p className="text-sm font-medium">{selectedChalan?.customer?.name || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Project</p>
+                          <p className="text-sm font-medium">{selectedChalan?.project?.name || "-"}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
                 {/* Items Section */}
                 <div>
-                  <h3 className="font-semibold mb-4">Items</h3>
+                  <div className="flex items-center justify-between gap-2 mb-4">
+                    <h3 className="font-semibold">Items</h3>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEditingItems([...editingItems, { description: "", quantity: "1", rate: "0" }]);
+                      }}
+                      data-testid="button-add-item"
+                    >
+                      + Add Item
+                    </Button>
+                  </div>
                   <div className="space-y-4">
                     {editingItems.map((item, index) => (
                       <Card key={item.id || index}>
                         <CardContent className="pt-6 space-y-4">
-                          <div>
-                            <Label>Description</Label>
-                            <Input
-                              value={item.description}
-                              onChange={(e) => {
-                                const updated = [...editingItems];
-                                updated[index].description = e.target.value;
-                                setEditingItems(updated);
-                              }}
-                              data-testid={`input-item-description-${index}`}
-                              className="mt-1"
-                            />
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <Label>Description</Label>
+                              <Input
+                                value={item.description}
+                                onChange={(e) => {
+                                  const updated = [...editingItems];
+                                  updated[index].description = e.target.value;
+                                  setEditingItems(updated);
+                                }}
+                                data-testid={`input-item-description-${index}`}
+                                className="mt-1"
+                              />
+                            </div>
+                            {editingItems.length > 1 && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="mt-6"
+                                onClick={() => {
+                                  setEditingItems(editingItems.filter((_, i) => i !== index));
+                                }}
+                                data-testid={`button-delete-item-${index}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
-                          <div className="grid grid-cols-3 gap-4">
+                          <div className="grid grid-cols-2 gap-4">
                             <div>
                               <Label>Quantity</Label>
                               <Input
