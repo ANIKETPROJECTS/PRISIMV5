@@ -428,7 +428,23 @@ export default function ChalanPage() {
     },
     {
       key: "chalanDate",
-      header: "Date",
+      header: (
+        <div className="flex items-center justify-between gap-2">
+          <span>Date</span>
+          <button
+            onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
+            className="hover:text-foreground text-muted-foreground transition-colors"
+            data-testid="button-sort-date"
+            title={sortOrder === "desc" ? "Sorted by latest first" : "Sorted by oldest first"}
+          >
+            {sortOrder === "desc" ? (
+              <ArrowDown className="h-4 w-4" />
+            ) : (
+              <ArrowUp className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      ),
       cell: (row) => (
         <span className="font-mono text-sm">
           {format(new Date(row.chalanDate), "PP")}
@@ -485,41 +501,21 @@ export default function ChalanPage() {
           />
         ) : (
           <div className="space-y-4">
-            <div className="flex justify-between items-center gap-2 flex-wrap">
+            <div className="flex justify-end gap-2">
               <Button 
-                variant="outline"
-                size="sm"
-                onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
-                data-testid="button-sort-date"
+                variant="outline" 
+                onClick={() => setLocation("/chalan/revise")}
+                data-testid="button-revise-chalan"
               >
-                {sortOrder === "desc" ? (
-                  <>
-                    <ArrowDown className="h-4 w-4 mr-2" />
-                    Latest First
-                  </>
-                ) : (
-                  <>
-                    <ArrowUp className="h-4 w-4 mr-2" />
-                    Oldest First
-                  </>
-                )}
+                <ClipboardList className="h-4 w-4 mr-2" />
+                Revise Chalan
               </Button>
-              <div className="flex justify-end gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setLocation("/chalan/revise")}
-                  data-testid="button-revise-chalan"
-                >
-                  <ClipboardList className="h-4 w-4 mr-2" />
-                  Revise Chalan
+              {canEditChalans && (
+                <Button onClick={handleOpenDialog} data-testid="button-create-chalan">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Chalan
                 </Button>
-                {canEditChalans && (
-                  <Button onClick={handleOpenDialog} data-testid="button-create-chalan">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Chalan
-                  </Button>
-                )}
-              </div>
+              )}
             </div>
 
             <DataTable

@@ -132,7 +132,23 @@ export default function ChalanRevisePage() {
     },
     {
       key: "chalanDate",
-      header: "Date",
+      header: (
+        <div className="flex items-center justify-between gap-2">
+          <span>Date</span>
+          <button
+            onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
+            className="hover:text-foreground text-muted-foreground transition-colors"
+            data-testid="button-sort-date"
+            title={sortOrder === "desc" ? "Sorted by latest first" : "Sorted by oldest first"}
+          >
+            {sortOrder === "desc" ? (
+              <ArrowDown className="h-4 w-4" />
+            ) : (
+              <ArrowUp className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      ),
       cell: (row) => (
         <span className="font-mono text-sm">
           {format(new Date(row.chalanDate), "PP")}
@@ -532,24 +548,6 @@ export default function ChalanRevisePage() {
           />
         ) : (
           <div className="space-y-4">
-            <Button 
-              variant="outline"
-              size="sm"
-              onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
-              data-testid="button-sort-date"
-            >
-              {sortOrder === "desc" ? (
-                <>
-                  <ArrowDown className="h-4 w-4 mr-2" />
-                  Latest First
-                </>
-              ) : (
-                <>
-                  <ArrowUp className="h-4 w-4 mr-2" />
-                  Oldest First
-                </>
-              )}
-            </Button>
             <DataTable
               columns={columns}
               data={chalans}
